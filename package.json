@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "jest": "^29.7.0"
+  },
+  "name": "sudoku-resolver",
+  "description": "Node js app to solve sudoku",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thibaut-devigne/sudoku-resolver.git"
+  },
+  "keywords": [
+    "sudoku",
+    "resolver"
+  ],
+  "author": "Thibaut Devigne",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thibaut-devigne/sudoku-resolver/issues"
+  },
+  "homepage": "https://github.com/thibaut-devigne/sudoku-resolver#readme"
+}
