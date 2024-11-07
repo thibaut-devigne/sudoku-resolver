@@ -5,6 +5,8 @@ const {
   sudokuIsSolved,
   getCellPositionFromBlocIndexAndOffset,
   getUpdatedPossibleValuesMappingOnNumberSet,
+  getNumberToSetByExclusivePair,
+  findExclusivePair
 } = require("./sudokuUtils.js")
 
 describe("", () => {
@@ -138,6 +140,47 @@ describe("", () => {
 
     expect(result2[0][1]).toEqual([])
     expect(result2[2][2]).toEqual([5])
+  })
+
+  test("It should find exclusive pair", () => {
+    //EXCLUSIVE PAIR
+    let nearestPossibleValues = [ [6,7],[],[3,7],[],[],[],[],[],[3,7]]
+    let result = findExclusivePair(nearestPossibleValues)
+    expect(result).toEqual([3,7])
+
+    //NO PAIR
+    let nearestPossibleValues2 = [ [6,7],[],[4,7],[],[],[],[],[],[3,7]]
+    let result2 = findExclusivePair(nearestPossibleValues2)
+    expect(result2).toBeUndefined()
+
+    //TRIPLET BUT STILL NO PAIR
+    let nearestPossibleValues3 = [ [6,7],[],[3,7],[],[3,7],[],[],[],[3,7]]
+    let result3 = findExclusivePair(nearestPossibleValues3)
+    expect(result3).toBeUndefined()
+  })
+
+  test("It should check exclusive pair and extract number to set in grid", () => {
+    const previousPossiblesValuesMapping = [
+      [[],[],[],[6,7],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[3,7],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[3,7],[],[],[],[],[]],
+    ]
+
+    let params = { colIndex: 3 }
+    let result = getNumberToSetByExclusivePair(previousPossiblesValuesMapping, "column", params)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length > 0).toBe(true)
+
+    expect(result[0].numb).toEqual(6)
+    expect(result[0].position.line).toEqual(0)
+    expect(result[0].position.col).toEqual(3)
 
   })
 })

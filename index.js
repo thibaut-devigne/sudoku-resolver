@@ -3,6 +3,7 @@ const {
   displayGrid,
   getPossibleValuesForCell,
   getNumberToSetByExclusion,
+  getNumberToSetByExclusivePair,
   sudokuIsSolved,
   getUpdatedPossibleValuesMappingOnNumberSet,
 } = require("./sudokuUtils.js")
@@ -18,6 +19,8 @@ const initialGrid = [
   [0,0,4,9,0,6,1,2,0],
   [0,0,2,0,0,0,0,0,0]
 ]
+
+// const initialGrid = exemple.find(aGrid => aGrid.reference === "expert_2616").statement
 console.log("++++++ INITIAL GRID ++++++ ")
 displayGrid(initialGrid)
 
@@ -50,7 +53,7 @@ const getSolvedGrid = (grid) => {
     }
 
     
-    //EXCLUSION METHOD
+    
     if(!valueWasAddedByInclusion) {
       let numberToSet = []
 
@@ -64,8 +67,13 @@ const getSolvedGrid = (grid) => {
             "3x3": "blocIndex",
           }
           let params = { [mappingType_ParamsName[type]]: index }
+          //EXCLUSION METHOD
           let numberToSetForThisItem = getNumberToSetByExclusion(possiblesValuesMapping, type, params, currentGrid)
           numberToSet = [ ...numberToSet, ...numberToSetForThisItem]
+          
+          //EXCLUSIVE PAIR METHOD
+          let numberToSetFromExclusivePair = getNumberToSetByExclusivePair(possiblesValuesMapping, type, params)
+          numberToSet = [ ...numberToSet, ...numberToSetFromExclusivePair]
         }
         
         numberToSet.forEach(numberToSetParams => {

@@ -9,7 +9,7 @@ It's base on the four main method :
 
 ## Usage
 To solve your grid, go to index.js and change the initialGrid. \
-Empty cell in your grid you be replace by 0. \
+Empty cell in your grid should be set to 0. \
 Then you can run :
 ```shell
 npm run start
@@ -21,7 +21,7 @@ npm run test:watch
 ```
 
 ## Disclaimer
-I know the code is not pretty, I don't think it's performant but it works quite ok and I had fun doing it. 
+I know the code is not pretty and I don't think it's performant but it works quite ok and I had fun doing it. 
 
 
 ## Improvement

@@ -110,6 +110,53 @@ const getNumberToSetByExclusion = (allPossibleValues, type, params, currentGrid)
   return numbersToSet
 }
 
+const findExclusivePair = (nearestPossibleValues) => {
+  const pairs = nearestPossibleValues
+    .filter(innerArray => innerArray.length === 2)
+    .map(innerArray => innerArray.sort((a, b) => a - b).toString());
+
+  const pairCounts = pairs.reduce((acc, pair) => {
+    acc[pair] = (acc[pair] || 0) + 1;
+    return acc;
+  }, {});
+
+  const exclusivePair = Object.entries(pairCounts)
+    .filter(([_, count]) => count === 2)
+    .map(([pair]) => pair.split(',').map(Number));
+
+  return exclusivePair.length > 0 ? exclusivePair[0] : undefined;
+}
+
+const getNumberToSetByExclusivePair = (allPossibleValues, type, params, currentGrid) => {
+  let nearestPossibleValues = getNearestPossibleValues(allPossibleValues, type, params)
+  
+  let exlusivePair = findExclusivePair(nearestPossibleValues)
+  if(!exlusivePair) return []
+  
+  let numbersToSet = []
+
+  nearestPossibleValues.forEach((possibleValuesOfCell, index) => {
+    if(possibleValuesOfCell.length !== 2) return;
+      let finalPossibilitiesOfCell = possibleValuesOfCell.filter(possibleVal => !exlusivePair.includes(possibleVal))
+      let hasUniquePossibility = finalPossibilitiesOfCell.length === 1
+      
+      if(hasUniquePossibility) {
+        let position = {}
+        if(type === "line") {
+          position = { line: params.lineIndex, col: index }
+        } else if(type === "column") {
+          position = { line: index, col: params.colIndex }
+        } else if(type === "3x3") {
+          position = getCellPositionFromBlocIndexAndOffset(params.blocIndex, index)
+        }
+
+        numbersToSet.push({ numb: finalPossibilitiesOfCell[0], position: position })
+      }
+  })
+  
+  return numbersToSet
+}
+
 
 const sudokuIsSolved = (currentGrid) => {
   return currentGrid.every(line => line.every(cell => cell !== 0))
@@ -154,6 +201,8 @@ module.exports = {
   get9BlocValuesFromBlocIndex,
   getNearestPossibleValues,
   getNumberToSetByExclusion,
+  getNumberToSetByExclusivePair,
+  findExclusivePair,
   sudokuIsSolved,
   getCellPositionFromBlocIndexAndOffset,
   getUpdatedPossibleValuesMappingOnNumberSet,
