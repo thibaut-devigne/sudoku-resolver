@@ -127,6 +127,73 @@ const findExclusivePair = (nearestPossibleValues) => {
   return exclusivePair.length > 0 ? exclusivePair[0] : undefined;
 }
 
+const getValuesSeenTwice = (nearestPossibleValues) => {
+  const allpossiblesValuesForBloc = nearestPossibleValues.reduce((acc, valuesForCell) => {
+    return [...acc, ...valuesForCell]
+  }, [])
+
+  let count = allpossiblesValuesForBloc.reduce((acc, value) => {
+    acc[value] = (acc[value] || 0) + 1;
+    return acc;
+  }, {})
+
+  const valuesSeenTwice = Object.entries(count).reduce((acc, [val, count]) => {
+    if(count === 2) return [...acc, parseInt(val)]
+    return [...acc]
+  }, [])
+
+  return valuesSeenTwice
+}
+
+const findHiddenPairs = (nearestPossibleValues) => {
+  const valuesSeenTwice = getValuesSeenTwice(nearestPossibleValues)
+  
+  const possiblePairCombinaisons = valuesSeenTwice.flatMap((v, i) => {
+    return valuesSeenTwice.slice(i+1).map( w => [v,w] )
+  });
+
+
+  let hiddenPairs = []
+  //Is there 2 cell that contain one of these combination ?
+  possiblePairCombinaisons.forEach(combi => {
+    let matchingCellCount = 0
+    let matchingCombi = undefined
+    let indexes = []
+
+    for (let i = 0; i < 9; i++) {
+      let hasFirstElt = nearestPossibleValues[i].includes(combi[0])
+      let hasSecondElt = nearestPossibleValues[i].includes(combi[1])
+      if(hasFirstElt && hasSecondElt) {
+        matchingCellCount++
+        matchingCombi = combi
+        indexes.push(i)
+      }
+    }
+    if(matchingCellCount !== 2) return;
+
+    hiddenPairs.push(matchingCombi)
+  })
+
+ return hiddenPairs
+}
+
+const findExclusiveTriplet = (nearestPossibleValues) => {
+  const triplets = nearestPossibleValues
+    .filter(innerArray => innerArray.length === 3)
+    .map(innerArray => innerArray.sort((a, b) => a - b).toString());
+
+  const tripletCounts = triplets.reduce((acc, pair) => {
+    acc[pair] = (acc[pair] || 0) + 1;
+    return acc;
+  }, {});
+
+  const exclusiveTriplet = Object.entries(tripletCounts)
+    .filter(([_, count]) => count === 3)
+    .map(([pair]) => pair.split(',').map(Number));
+
+  return exclusiveTriplet.length > 0 ? exclusiveTriplet[0] : undefined;
+}
+
 const getNumberToSetByExclusivePair = (allPossibleValues, type, params, currentGrid) => {
   let nearestPossibleValues = getNearestPossibleValues(allPossibleValues, type, params)
   
@@ -138,6 +205,89 @@ const getNumberToSetByExclusivePair = (allPossibleValues, type, params, currentG
   nearestPossibleValues.forEach((possibleValuesOfCell, index) => {
     if(possibleValuesOfCell.length !== 2) return;
       let finalPossibilitiesOfCell = possibleValuesOfCell.filter(possibleVal => !exlusivePair.includes(possibleVal))
+      let hasUniquePossibility = finalPossibilitiesOfCell.length === 1
+      
+      if(hasUniquePossibility) {
+        let position = {}
+        if(type === "line") {
+          position = { line: params.lineIndex, col: index }
+        } else if(type === "column") {
+          position = { line: index, col: params.colIndex }
+        } else if(type === "3x3") {
+          position = getCellPositionFromBlocIndexAndOffset(params.blocIndex, index)
+        }
+
+        numbersToSet.push({ numb: finalPossibilitiesOfCell[0], position: position })
+      }
+  })
+  
+  return numbersToSet
+}
+
+const getNumberToSetByHiddenPair = (allPossibleValues, type, params, currentGrid) => {
+
+
+  let nearestPossibleValues = getNearestPossibleValues(allPossibleValues, type, params)
+  let hiddenPairs = findHiddenPairs(nearestPossibleValues)
+  if(hiddenPairs.length === 0) return []
+
+  const valuesSeenTwice = getValuesSeenTwice(nearestPossibleValues)
+
+  let numbersToSet = []
+
+  hiddenPairs.forEach(hiddenPair => {
+    let indexes = []
+    nearestPossibleValues.forEach((candidates, index) => {
+      if(candidates.includes(hiddenPair[0]) && candidates.includes(hiddenPair[0])) {
+        indexes.push(index)
+      }
+    })
+
+    //pair found so other possible values are ejected
+    let otherValuesOfTheseCell = [
+      ...nearestPossibleValues[indexes[0]],
+      ...nearestPossibleValues[indexes[1]],
+    ].filter(val => val !== hiddenPair[0] && val !== hiddenPair[1])
+    
+    // 
+    otherValuesOfTheseCell.forEach(ejectedValue => {
+      if(!valuesSeenTwice.includes(ejectedValue)) return;
+      
+      for (let i = 0; i < 9; i++) {
+        if(indexes.includes(i)) break;
+
+        if(nearestPossibleValues[i].length === 2 && nearestPossibleValues[i].includes(ejectedValue)) {
+
+          let position = {}
+          if(type === "line") {
+            position = { line: params.lineIndex, col: i }
+          } else if(type === "column") {
+            position = { line: i, col: params.colIndex }
+          } else if(type === "3x3") {
+            position = getCellPositionFromBlocIndexAndOffset(params.blocIndex, i)
+          }
+
+          numbersToSet.push({ numb: ejectedValue, position: position })
+
+        }
+      }
+    })
+  })
+
+  return numbersToSet
+}
+
+const getNumberToSetByExclusiveTriplet = (allPossibleValues, type, params, currentGrid) => {
+  let nearestPossibleValues = getNearestPossibleValues(allPossibleValues, type, params)
+  
+  let exlusiveTriplet = findExclusiveTriplet(nearestPossibleValues)
+  if(!exlusiveTriplet) return []
+  
+  let numbersToSet = []
+
+  nearestPossibleValues.forEach((possibleValuesOfCell, index) => {
+    if(possibleValuesOfCell.length !== 3) return;
+      let finalPossibilitiesOfCell = possibleValuesOfCell.filter(possibleVal => !exlusiveTriplet.includes(possibleVal))
       let hasUniquePossibility = finalPossibilitiesOfCell.length === 1
       
       if(hasUniquePossibility) {
@@ -202,7 +352,11 @@ module.exports = {
   getNearestPossibleValues,
   getNumberToSetByExclusion,
   getNumberToSetByExclusivePair,
+  getNumberToSetByHiddenPair,
+  getNumberToSetByExclusiveTriplet,
   findExclusivePair,
+  findHiddenPairs,
+  findExclusiveTriplet,
   sudokuIsSolved,
   getCellPositionFromBlocIndexAndOffset,
   getUpdatedPossibleValuesMappingOnNumberSet,

@@ -4,6 +4,8 @@ const {
   getPossibleValuesForCell,
   getNumberToSetByExclusion,
   getNumberToSetByExclusivePair,
+  getNumberToSetByHiddenPair,
+  getNumberToSetByExclusiveTriplet,
   sudokuIsSolved,
   getUpdatedPossibleValuesMappingOnNumberSet,
 } = require("./sudokuUtils.js")
@@ -74,6 +76,14 @@ const getSolvedGrid = (grid) => {
           //EXCLUSIVE PAIR METHOD
           let numberToSetFromExclusivePair = getNumberToSetByExclusivePair(possiblesValuesMapping, type, params)
           numberToSet = [ ...numberToSet, ...numberToSetFromExclusivePair]
+
+          //HIDDEN PAIR METHOD
+          let numberToSetFromHiddenPair = getNumberToSetByHiddenPair(possiblesValuesMapping, type, params)
+          numberToSet = [ ...numberToSet, ...numberToSetFromHiddenPair]
+
+          //EXCLUSIVE TRIPLET METHOD
+          let numberToSetFromExclusiveTriplet = getNumberToSetByExclusiveTriplet(possiblesValuesMapping, type, params)
+          numberToSet = [ ...numberToSet, ...numberToSetFromExclusiveTriplet]
         }
         
         numberToSet.forEach(numberToSetParams => {
@@ -85,6 +95,11 @@ const getSolvedGrid = (grid) => {
       })
     }
 
+    // if( n === 99) {
+    //   possiblesValuesMapping.forEach(values => {
+    //     console.log(JSON.stringify(values))
+    //   })
+    // }
     if(sudokuIsSolved(currentGrid)) {
       break;
     }

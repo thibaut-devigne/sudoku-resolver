@@ -6,7 +6,11 @@ const {
   getCellPositionFromBlocIndexAndOffset,
   getUpdatedPossibleValuesMappingOnNumberSet,
   getNumberToSetByExclusivePair,
-  findExclusivePair
+  getNumberToSetByHiddenPair,
+  getNumberToSetByExclusiveTriplet,
+  findExclusivePair,
+  findHiddenPairs,
+  findExclusiveTriplet
 } = require("./sudokuUtils.js")
 
 describe("", () => {
@@ -181,7 +185,73 @@ describe("", () => {
     expect(result[0].numb).toEqual(6)
     expect(result[0].position.line).toEqual(0)
     expect(result[0].position.col).toEqual(3)
+  })
 
+  test("It should find hidden pair inside an array", () => {
+    
+    const previousPossiblesValuesMapping = [[3,5,8,9],[],[3,5,8,9],[7,9],[3,9],[1,3,4,7],[1,3,4,5],[],[3,5,9]]
+
+    let result = findHiddenPairs(previousPossiblesValuesMapping)
+    expect(Array.isArray(result)).toBe(true)
+    expect(result[0]).toEqual([1,4])
+  })
+
+  test("It should check hidden pair and extract number to set in grid", () => {
+    //in this exemple 1 and 4 can only be in 2 positions, that means, that 7 can't be in that position
+    //so it's somewhere else, so it can be set in (line: 6, col: 3)
+    const previousPossiblesValuesMapping = [
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[3,5,8,9],[],[3,5,8,9],[7,9],[3,9],[1,3,4,7],[1,3,4,5],[],[3,5,9]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+    ]
+
+    let params = { lineIndex: 6 }
+    let result = getNumberToSetByHiddenPair(previousPossiblesValuesMapping, "line", params)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length > 0).toBe(true)
+
+    expect(result[0].numb).toEqual(7)
+    expect(result[0].position.line).toEqual(6)
+    expect(result[0].position.col).toEqual(3)
+  })
+
+  test("It should find exclusive triplet inside an array", () => {
+    const previousPossiblesValuesMapping = [[2,6,8],[],[2,6,8],[],[6,8,9],[2,6,8],[],[],[]]
+
+    let result = findExclusiveTriplet(previousPossiblesValuesMapping)
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toEqual([2,6,8])
+  })
+
+  test("It should check exclusive triplet and extract number to set in grid - PERFECT TRIPLET", () => {
+    const previousPossiblesValuesMapping = [
+      [[],[],[],[],[],[],[2,6,8],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[2,6,8],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[6,8,9],[],[]],
+      [[],[],[],[],[],[],[2,6,8],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+    ]
+
+    let params = { colIndex: 6 }
+    let result = getNumberToSetByExclusiveTriplet(previousPossiblesValuesMapping, "column", params)
+    console.log("result === ", result)
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length > 0).toBe(true)
+
+    expect(result[0].numb).toEqual(9)
+    expect(result[0].position.line).toEqual(4)
+    expect(result[0].position.col).toEqual(6)
   })
 })
 
