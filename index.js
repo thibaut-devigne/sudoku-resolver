@@ -1,113 +1,33 @@
 const { exemple } = require("./exempleGrid")
-const {
-  displayGrid,
-  getPossibleValuesForCell,
-  getNumberToSetByExclusion,
-  getNumberToSetByExclusivePair,
-  getNumberToSetByHiddenPair,
-  getNumberToSetByExclusiveTriplet,
-  sudokuIsSolved,
-  getUpdatedPossibleValuesMappingOnNumberSet,
-} = require("./sudokuUtils.js")
+const { displayGrid } = require("./sudokuUtils.js")
+const { 
+  generateHTMLFullPageContent, 
+  getSolvedGrid,
+  generateHTMLResolutionSteps
+} = require("./getSolvedGrid.js")
 
-const initialGrid = [
-  [3,5,0,0,0,0,0,4,0],
-  [0,0,7,2,0,1,0,0,6],
-  [0,0,0,7,0,3,9,0,0],
-  [0,0,0,0,1,0,5,0,0],
-  [0,0,0,8,0,7,4,1,2],
-  [0,0,0,4,0,0,0,0,8],
-  [9,0,5,0,0,0,6,8,0],
-  [0,0,4,9,0,6,1,2,0],
-  [0,0,2,0,0,0,0,0,0]
-]
+// const initialGrid = [
+//   [3,5,0,0,0,0,0,4,0],
+//   [0,0,7,2,0,1,0,0,6],
+//   [0,0,0,7,0,3,9,0,0],
+//   [0,0,0,0,1,0,5,0,0],
+//   [0,0,0,8,0,7,4,1,2],
+//   [0,0,0,4,0,0,0,0,8],
+//   [9,0,5,0,0,0,6,8,0],
+//   [0,0,4,9,0,6,1,2,0],
+//   [0,0,2,0,0,0,0,0,0]
+// ]
 
-// const initialGrid = exemple.find(aGrid => aGrid.reference === "expert_2616").statement
-console.log("++++++ INITIAL GRID ++++++ ")
-displayGrid(initialGrid)
+const initialGrid = exemple.find(aGrid => aGrid.reference === "expert_2616").statement
+// const initialGrid = exemple[0].statement
 
-const getSolvedGrid = (grid) => {
-  let currentGrid = JSON.parse(JSON.stringify(grid))
-  let n = 0;
-  let possiblesValuesMapping = Array(9).fill().map(a => Array(9).fill().map(b => []))
-  let valueWasAddedByInclusion = false
 
-  while (n < 100) {
-    valueWasAddedByInclusion = false
-    // console.log("Loop n°", n, " =========")
-    n++;
-    for (let i = 0; i < 9; i++) {
-      for (let j = 0; j < 9; j++) {
-        
-        let isNotFoundYet = currentGrid[i][j] === 0
-        if(isNotFoundYet) {
-          let possiblesValues = getPossibleValuesForCell(i, j, currentGrid)
-          possiblesValuesMapping[i][j] = possiblesValues
+// console.log("++++++ INITIAL GRID ++++++ ")
+// displayGrid(initialGrid)
 
-          //INCLUSION METHOD
-          if(possiblesValues.length === 1) {
-            currentGrid[i][j] = possiblesValues[0]
-            possiblesValuesMapping[i][j] = []
-            valueWasAddedByInclusion = true
-          } 
-        }
-      } 
-    }
+// const solvedGrid = getSolvedGrid(initialGrid)
+// console.log("++++++ FINAL GRID ++++++ ")
+// displayGrid(solvedGrid)
 
-    
-    
-    if(!valueWasAddedByInclusion) {
-      let numberToSet = []
 
-      let exclusionTypes = ["line", "column", "3x3"]
-      exclusionTypes.forEach(type => {
-        numberToSet = []
-        for (let index = 0; index < 9; index++) {
-          let mappingType_ParamsName = { 
-            line: "lineIndex",
-            column: "colIndex",
-            "3x3": "blocIndex",
-          }
-          let params = { [mappingType_ParamsName[type]]: index }
-          //EXCLUSION METHOD
-          let numberToSetForThisItem = getNumberToSetByExclusion(possiblesValuesMapping, type, params, currentGrid)
-          numberToSet = [ ...numberToSet, ...numberToSetForThisItem]
-          
-          //EXCLUSIVE PAIR METHOD
-          let numberToSetFromExclusivePair = getNumberToSetByExclusivePair(possiblesValuesMapping, type, params)
-          numberToSet = [ ...numberToSet, ...numberToSetFromExclusivePair]
-
-          //HIDDEN PAIR METHOD
-          let numberToSetFromHiddenPair = getNumberToSetByHiddenPair(possiblesValuesMapping, type, params)
-          numberToSet = [ ...numberToSet, ...numberToSetFromHiddenPair]
-
-          //EXCLUSIVE TRIPLET METHOD
-          let numberToSetFromExclusiveTriplet = getNumberToSetByExclusiveTriplet(possiblesValuesMapping, type, params)
-          numberToSet = [ ...numberToSet, ...numberToSetFromExclusiveTriplet]
-        }
-        
-        numberToSet.forEach(numberToSetParams => {
-          let { numb, position } = numberToSetParams
-          let { line, col } = position
-          currentGrid[line][col] = numb
-          possiblesValuesMapping = getUpdatedPossibleValuesMappingOnNumberSet(possiblesValuesMapping, numberToSetParams)
-        })
-      })
-    }
-
-    // if( n === 99) {
-    //   possiblesValuesMapping.forEach(values => {
-    //     console.log(JSON.stringify(values))
-    //   })
-    // }
-    if(sudokuIsSolved(currentGrid)) {
-      break;
-    }
-  }
-
-  return currentGrid
-}
-
-const solvedGrid = getSolvedGrid(initialGrid)
-console.log("++++++ FINAL GRID ++++++ ")
-displayGrid(solvedGrid)
+generateHTMLResolutionSteps(initialGrid)

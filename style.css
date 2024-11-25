@@ -1,0 +1,70 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+table.mainGrid {
+  margin: 20px;
+}
+
+table {
+  border-spacing: 0px;
+  border-collapse: collapse;
+}
+
+table.mainGrid td {
+  background-color: white;
+  width: 72px;
+  height: 72px;
+  align-items: center;
+  text-align: center;
+  border: 1px solid black;
+  font-weight: 900;
+  font-family: sans-serif;
+}
+
+table.candidateTable td {
+  background-color: white;
+  color: rgb(184, 13, 184);
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  text-align: center;
+  font-weight: normal;
+  border: none;
+}
+
+table.mainGrid tr:first-child {
+  border-top: 4px solid black;
+}
+
+table.mainGrid tr:nth-child(3n) {
+  border-bottom: 4px solid black;
+}
+
+table.mainGrid td:first-child {
+  border-left: 4px solid black;
+}
+
+table.mainGrid td:nth-child(3n) {
+  border-right: 4px solid black;
+}
+
+
+
+table.candidateTable tr:first-child {
+  border-top: none;
+}
+
+table.candidateTable tr:nth-child(3n) {
+  border-bottom: none;
+}
+
+table.candidateTable td:first-child {
+  border-left: none;
+}
+
+table.candidateTable td:nth-child(3n) {
+  border-right: none;
+}

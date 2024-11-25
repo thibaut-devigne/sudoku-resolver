@@ -110,7 +110,7 @@ const getNumberToSetByExclusion = (allPossibleValues, type, params, currentGrid)
   return numbersToSet
 }
 
-const findExclusivePair = (nearestPossibleValues) => {
+const findExclusivePairs = (nearestPossibleValues) => {
   const pairs = nearestPossibleValues
     .filter(innerArray => innerArray.length === 2)
     .map(innerArray => innerArray.sort((a, b) => a - b).toString());
@@ -124,7 +124,12 @@ const findExclusivePair = (nearestPossibleValues) => {
     .filter(([_, count]) => count === 2)
     .map(([pair]) => pair.split(',').map(Number));
 
-  return exclusivePair.length > 0 ? exclusivePair[0] : undefined;
+  return exclusivePair
+}
+
+const findExclusivePair = (nearestPossibleValues) => {
+  let exclusivePairs = findExclusivePairs(nearestPossibleValues)
+  return exclusivePairs.length > 0 ? exclusivePairs[0] : undefined;
 }
 
 const getValuesSeenTwice = (nearestPossibleValues) => {
@@ -194,6 +199,38 @@ const findExclusiveTriplet = (nearestPossibleValues) => {
   return exclusiveTriplet.length > 0 ? exclusiveTriplet[0] : undefined;
 }
 
+const getPositionFromTypeAndIndex = (type, params, index) => {
+  let position = {}
+  if(type === "line") {
+    position = { line: params.lineIndex, col: index }
+  } else if(type === "column") {
+    position = { line: index, col: params.colIndex }
+  } else if(type === "3x3") {
+    position = getCellPositionFromBlocIndexAndOffset(params.blocIndex, index)
+  }
+  return position
+}
+
+const getCandidatesToRemoveByExclusivePair = (allPossibleValues, type, params) => {
+  let nearestPossibleValues = getNearestPossibleValues(allPossibleValues, type, params)
+  let exclusivePairs = findExclusivePairs(nearestPossibleValues)
+  
+  let candidateToRemove = []
+  exclusivePairs.forEach(pair => {
+    nearestPossibleValues.forEach((candidates, index) => {
+      let candidatesBelongToThePair = pair.sort().toString() == candidates.sort().toString()
+      if(candidatesBelongToThePair) return;
+
+      candidates.forEach(candidate => {
+        if(pair.includes(candidate)) {
+          candidateToRemove.push({ numb: candidate, index: index})
+        }
+      })
+    })
+  })
+  return candidateToRemove
+}
+
 const getNumberToSetByExclusivePair = (allPossibleValues, type, params, currentGrid) => {
   let nearestPossibleValues = getNearestPossibleValues(allPossibleValues, type, params)
   
@@ -204,21 +241,13 @@ const getNumberToSetByExclusivePair = (allPossibleValues, type, params, currentG
 
   nearestPossibleValues.forEach((possibleValuesOfCell, index) => {
     if(possibleValuesOfCell.length !== 2) return;
-      let finalPossibilitiesOfCell = possibleValuesOfCell.filter(possibleVal => !exlusivePair.includes(possibleVal))
-      let hasUniquePossibility = finalPossibilitiesOfCell.length === 1
-      
-      if(hasUniquePossibility) {
-        let position = {}
-        if(type === "line") {
-          position = { line: params.lineIndex, col: index }
-        } else if(type === "column") {
-          position = { line: index, col: params.colIndex }
-        } else if(type === "3x3") {
-          position = getCellPositionFromBlocIndexAndOffset(params.blocIndex, index)
-        }
-
-        numbersToSet.push({ numb: finalPossibilitiesOfCell[0], position: position })
-      }
+    let finalPossibilitiesOfCell = possibleValuesOfCell.filter(possibleVal => !exlusivePair.includes(possibleVal))
+    let hasUniquePossibility = finalPossibilitiesOfCell.length === 1
+    
+    if(hasUniquePossibility) {
+      let position = getPositionFromTypeAndIndex(type, params, index)
+      numbersToSet.push({ numb: finalPossibilitiesOfCell[0], position: position })
+    }
   })
   
   return numbersToSet
@@ -307,26 +336,33 @@ const getNumberToSetByExclusiveTriplet = (allPossibleValues, type, params, curre
   return numbersToSet
 }
 
-
 const sudokuIsSolved = (currentGrid) => {
   return currentGrid.every(line => line.every(cell => cell !== 0))
 }
 
-const getUpdatedPossibleValuesMappingOnNumberSet = (previousPossiblesValuesMapping, numberToSet) => {
-  let { numb, position} = numberToSet
+const getCandidatesGridOnCandidateRemoval = (previousCandidatesGrid, candidateToRemove) => {
+  let { numb, position } = candidateToRemove
   let { line, col } = position
 
-  let newPossibleValues = JSON.parse(JSON.stringify(previousPossiblesValuesMapping))
-  newPossibleValues[line][col] = [];
+  let newCandidatesGrid = JSON.parse(JSON.stringify(previousCandidatesGrid))
+  newCandidatesGrid[line][col] = newCandidatesGrid[line][col].filter(val => val !== numb);
+  return newCandidatesGrid
+}
+
+const getCandidatesGridOnNumberSet = (previousCandidatesGrid, numberToSet) => {
+  let { numb, position } = numberToSet
+  let { line, col } = position
+
+  let newCandidatesGrid = JSON.parse(JSON.stringify(previousCandidatesGrid))
 
   //clean on the line
   for (let i = 0; i < 9; i++) {
-    newPossibleValues[line][i] = newPossibleValues[line][i].filter(val => val !== numb);
+    newCandidatesGrid[line][i] = newCandidatesGrid[line][i].filter(val => val !== numb);
   }
 
   //clean on the column
   for (let i = 0; i < 9; i++) {
-    newPossibleValues[i][col] = newPossibleValues[i][col].filter(val => val !== numb);
+    newCandidatesGrid[i][col] = newCandidatesGrid[i][col].filter(val => val !== numb);
   }
 
   // clean on the 3x3 bloc
@@ -335,10 +371,94 @@ const getUpdatedPossibleValuesMappingOnNumberSet = (previousPossiblesValuesMappi
   let colStart = blocIndex%3*3
   for (let i = lineStart; i < (lineStart+3); i++) {
     for (let j = colStart; j < (colStart+3); j++) {
-      newPossibleValues[i][j] = newPossibleValues[i][j].filter(val => val !== numb);
+      newCandidatesGrid[i][j] = newCandidatesGrid[i][j].filter(val => val !== numb);
     }
   }
-  return newPossibleValues
+  newCandidatesGrid[line][col] = [];
+  return newCandidatesGrid
+}
+
+const linesAreEquals = (lineA, lineB) => {
+  for (let index = 0; index < 9; index++) {
+    if(lineA[index] !== lineB[index]) return false
+  }
+  return true
+}
+
+const gridsAreEquals = (gridA, gridB) => {
+  if(gridA.length !== 9 || gridB.length !== 9) return false
+
+  for (let lineIndex = 0; lineIndex < 9; lineIndex++) {
+    if(!linesAreEquals(gridA[lineIndex], gridB[lineIndex])) return false
+  }
+  return true
+}
+
+const getHTMLCandidatesTables = (cellCandidates) => {
+  let result = [`<table class="candidateTable">`]
+
+  for (let i = 0; i < 3; i++) {
+    // const element = array[i];
+    result.push("<tr>")
+    for (let j = 0; j < 3; j++) {
+      let numberToTest =  i*3 + j + 1
+      if(cellCandidates.includes(numberToTest)) {
+        result.push(`<td>${numberToTest}</td>`)
+      } else {
+        result.push(`<td></td>`)
+      }
+    }
+    result.push("</tr>")
+  }
+
+  result.push(`</table>`)
+
+  return result.join("")
+}
+
+const getHtmlGridContent = (grid, candidatesGrid) => {
+  let HTMLGrid = `<table class="mainGrid">`
+
+  grid.forEach((line, lineIndex) => {
+    let htmlLineArr = []
+    line.forEach((cell, cellIndex) => {
+      if(cellIndex === 0) htmlLineArr.push("<tr>")
+        if(cell === 0) {
+          let cellCandidates = candidatesGrid[lineIndex][cellIndex]
+          // htmlLineArr.push(getHTMLCandidatesTables())
+          htmlLineArr.push(`<td>${getHTMLCandidatesTables(cellCandidates)}</td>`)
+        } else {
+          htmlLineArr.push(`<td>${cell}</td>`)
+        }
+      if(cellIndex === 8) htmlLineArr.push("</tr>")
+    })
+    let htmlLine = htmlLineArr.join("")
+    HTMLGrid = HTMLGrid.concat(htmlLine)
+  })
+
+  HTMLGrid = HTMLGrid.concat("</table>")
+  return HTMLGrid
+}
+
+const getHTMLContent = bodyContent => {
+  return `<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>My sudoku grid</title>
+        <link rel="stylesheet" href="style.css">
+      </head>
+      <body>
+        ${bodyContent}
+      </body>
+    </html>`
+}
+
+const getHTMLFullPageContent = grid => {
+  let HTMLGrid = getHtmlGridContent(grid)
+  return getHTMLContent(HTMLGrid)
 }
 
 module.exports = {
@@ -351,6 +471,7 @@ module.exports = {
   get9BlocValuesFromBlocIndex,
   getNearestPossibleValues,
   getNumberToSetByExclusion,
+  getCandidatesToRemoveByExclusivePair,
   getNumberToSetByExclusivePair,
   getNumberToSetByHiddenPair,
   getNumberToSetByExclusiveTriplet,
@@ -359,5 +480,11 @@ module.exports = {
   findExclusiveTriplet,
   sudokuIsSolved,
   getCellPositionFromBlocIndexAndOffset,
-  getUpdatedPossibleValuesMappingOnNumberSet,
+  getCandidatesGridOnNumberSet,
+  gridsAreEquals,
+  getPositionFromTypeAndIndex,
+  getCandidatesGridOnCandidateRemoval,
+  getHTMLFullPageContent,
+  getHtmlGridContent,
+  getHTMLContent,
 }
