@@ -12,6 +12,8 @@ const {
   sudokuIsSolved,
   getCandidatesGridOnNumberSet,
   displayGrid,
+  getXWings,
+  getCandidatesToRemoveByXWings,
   getHTMLFullPageContent,
   getHtmlGridContent,
   getHTMLContent,
@@ -45,10 +47,6 @@ const getNextGridFullInfos = (grid) => {
       let params = { [mappingType_ParamsName[type]]: index }
 
       let candidatesToRemove = getCandidatesToRemoveByExclusivePair(candidatesGrid, type, params)
-      // if(candidatesToRemove.length !== 0) {
-      //   displayGrid(nextGrid)
-      //   console.log(candidatesGrid)
-      // }
       candidatesToRemove.forEach(({ numb, index: cellIndex}) => {
         let position = getPositionFromTypeAndIndex(type, params, cellIndex)
         candidatesGrid = getCandidatesGridOnCandidateRemoval(candidatesGrid, { numb, position })
@@ -56,6 +54,10 @@ const getNextGridFullInfos = (grid) => {
     }
   })
   
+  let candidatesToRemoveByXWing = getCandidatesToRemoveByXWings(candidatesGrid)
+  candidatesToRemoveByXWing.forEach((numbAndPosition) => {
+    candidatesGrid = getCandidatesGridOnCandidateRemoval(candidatesGrid, numbAndPosition)
+  })
 
   //RESOLUTION
   for (let i = 0; i < 9; i++) {

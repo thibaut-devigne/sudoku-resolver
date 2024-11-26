@@ -7,6 +7,11 @@ It's base on the four main method :
 - exclusive pair
 - exclusive triplet
 
+And some more complex rules like :
+- X-Wings
+- Y-Wings
+- Simple coloration
+
 ## Usage
 To solve your grid, go to index.js and change the initialGrid. \
 Empty cell in your grid should be set to 0. \
@@ -29,3 +34,4 @@ I know the code is not pretty and I don't think it's performant but it works qui
 - [x] exclusion method
 - [] exclusive pair
 - [] exclusive triplet
+- [x] X-wing

@@ -12,7 +12,12 @@ const {
   findExclusivePair,
   findHiddenPairs,
   findExclusiveTriplet,
-  gridsAreEquals
+  gridsAreEquals,
+  getIndexesOfCandidate,
+  xWingAreEqual,
+  xWingIsIncluded,
+  getXWings,
+  getCandidatesToRemoveByXWings
 } = require("./sudokuUtils.js")
 
 const { 
@@ -393,6 +398,190 @@ describe("", () => {
 
     expect(Array.isArray(result)).toBe(true)
     expect(result).toEqual([ { numb: 4, index: 3 }, { numb: 5, index: 8 } ])
+  })
+
+  test("It should get indexes of candidate", () => {
+    let nearestCandidates = [[2,3],[],[3,4],[],[3,8],[],[],[],[5,7],[]]
+    expect(getIndexesOfCandidate(nearestCandidates, 3)).toEqual([0,2,4])
+  })
+
+  
+})
+
+describe("X-Wing behavior", () => {
+  test("It should check that xWing are identical (end of wing order does not matter)", () => {
+    let xWingA = {
+      type: 'xwing-line',
+      numb: 3,
+      wings: [
+        { line: 2, col: 8 },
+        { line: 2, col: 1 },
+        { line: 6, col: 8 },
+        { line: 6, col: 1 }
+      ]
+    }
+    let xWingB = {
+      type: 'xwing-line',
+      numb: 3,
+      wings: [
+        { line: 6, col: 1 },
+        { line: 6, col: 8 },
+        { line: 2, col: 1 },
+        { line: 2, col: 8 }
+      ]
+    }
+    expect(xWingAreEqual(xWingA, xWingB)).toBe(true)
+  })
+
+  test("It should check that xWing are not identical", () => {
+    let xWingA = {
+      type: 'xwing-line',
+      numb: 3,
+      wings: [
+        { line: 2, col: 8 },
+        { line: 2, col: 1 },
+        { line: 6, col: 8 },
+        { line: 6, col: 1 }
+      ]
+    }
+    let xWingB = {
+      type: 'xwing-line',
+      numb: 3,
+      wings: [
+        { line: 5, col: 1 },
+        { line: 5, col: 8 },
+        { line: 3, col: 1 },
+        { line: 3, col: 8 }
+      ]
+    }
+    expect(xWingAreEqual(xWingA, xWingB)).toBe(false)
+  })
+
+  test("It should find X-Wings inside candidate Grid", () => {
+    const candidatesGrid = [
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[2,3,8]],
+      [[],[2,3,9],[],[],[],[],[],[],[2,3,5,8]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[3,4],[],[],[],[],[],[],[3,5]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+    ]
+
+    const result = getXWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(1)
+
+    const expectedResult = {
+      type: "xwing-line",
+      numb: 3,
+      wings: [
+        { line: 2, col: 1 },
+        { line: 2, col: 8 },
+        { line: 6, col: 1 },
+        { line: 6, col: 8 },
+      ]
+    }
+    expect(result[0]).toEqual(expectedResult)
+  })
+
+  test("It should not find invalid X-Wings like if the 2 lines or the 2 column are ine the same bloc", () => {
+    const candidatesGrid = [
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[2,3,8]],
+      [[],[],[],[],[],[],[],[2,3,9],[2,3,5,8]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[3,4],[3,5]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+    ]
+
+    const result = getXWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(0)
+  })
+
+  test("It should find column X-Wings", () => {
+    const candidatesGrid = [
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],[3,9],  [],[5,9], [],[],[],[],[7,9]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],[2,9],  [],  [],  [],[],[],[],[4,9]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+    ]
+
+    const result = getXWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(1)
+    console.log(result[0])
+    const expectedResult = {
+      type: "xwing-column",
+      numb: 9,
+      wings: expect.arrayContaining([
+        { line: 1, col: 1 },
+        { line: 1, col: 8 },
+        { line: 6, col: 1 },
+        { line: 6, col: 8 },
+      ])
+    }
+    expect(result[0]).toEqual(expectedResult)
+  })
+
+  test("It should remove candidate thanks to X-Wing method - Case with Line X-Wing", () => {
+    const candidatesGrid = [
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[2,3,8]],
+      [[],[2,3,9],[],[],[],[],[],[],[2,3,5,8]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[3,4],[],[],[],[],[],[],[3,5]],
+      [[],[],[],[],[],[],[],[],[]],
+      [[],[],[],[],[],[],[],[],[]],
+    ]
+
+    const result = getCandidatesToRemoveByXWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(1)
+    const expectedResult = [
+      { numb: 3, position: { line: 1, col: 8 }}
+    ]
+    expect(result).toEqual(expectedResult)
+  })
+
+  test("It should remove candidate thanks to X-Wing method - Case with column X-Wing", () => {
+    const candidatesGrid = [
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],[3,9],  [],[5,9], [],[],[],[],[7,9]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],[2,9],  [],  [],  [],[],[],[],[4,9]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+      [[],   [],  [],  [],  [],[],[],[],[]],
+    ]
+
+    const result = getCandidatesToRemoveByXWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(1)
+    const expectedResult = [
+      { numb: 9, position: { line: 1, col: 3 }}
+    ]
+    expect(result).toEqual(expectedResult)
   })
 })
 

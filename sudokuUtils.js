@@ -461,6 +461,191 @@ const getHTMLFullPageContent = grid => {
   return getHTMLContent(HTMLGrid)
 }
 
+const getCandidatesCountOnLine = (candidatesGrid, lineIndex) => {
+  let countOnLine = Array(10).fill(0)
+  candidatesGrid[lineIndex].flat(2).forEach(val => {
+    countOnLine[val] = (countOnLine[val] || 0) + 1;
+  })
+  return countOnLine
+}
+
+const getCandidatesCountOnColumn = (candidatesGrid, colIndex) => {
+  let countOnColumn = Array(10).fill(0)
+  let columnsCandidates = getNearestPossibleValues(candidatesGrid, "column", { colIndex: colIndex })
+  
+  columnsCandidates.flat(2).forEach(val => {
+    countOnColumn[val] = (countOnColumn[val] || 0) + 1;
+  })
+  return countOnColumn
+}
+
+
+const getIndexesOfCandidate = (nearestCandidates, candidateToSeek) => {
+  return nearestCandidates.reduce((acc, candidates, index) => {
+    return candidates.includes(candidateToSeek) ? [ ...acc, index] : [ ...acc ]
+  }, [])
+}
+
+const xWingAreEqual = (xWingA, xWingB) => {
+  if(xWingA.type !== xWingB.type) return false
+  if(xWingA.numb !== xWingB.numb) return false
+  let xWingAEnds = xWingA.wings.map(wing => `L${wing.line}C${wing.col}`)
+  xWingAEnds.sort()
+  let xWingBEnds = xWingB.wings.map(wing => `L${wing.line}C${wing.col}`)
+  xWingBEnds.sort()
+
+  return (xWingAEnds.join("") === xWingBEnds.join("")) 
+}
+
+const xWingIsIncluded = (XWings, xwingToSeek) => {
+  return XWings.some(xwing => xWingAreEqual(xwing, xwingToSeek))
+}
+
+const getLineXWings = candidatesGrid => {
+  let XWings = []
+  candidatesGrid.forEach((line, line_A_Index) => {
+    let countOnLineA = getCandidatesCountOnLine(candidatesGrid, line_A_Index)
+    
+    line.forEach((candidates, col_A_Index) => {
+      candidates.forEach(candidate => {
+        if(countOnLineA[candidate] !== 2) return;
+
+        let indexes = getIndexesOfCandidate(line, candidate)
+        let col_B_Index = indexes.reduce((acc, ind) => {
+          return ind !== col_A_Index ? ind : acc
+        }, -1)
+
+        let column = getNearestPossibleValues(candidatesGrid, "column", { colIndex: col_A_Index })
+        column.forEach((candidatesOfCol, line_B_Index) => {
+          if(line_A_Index === line_B_Index) return;
+          if(!candidatesOfCol.includes(candidate)) return;
+          if(!candidatesGrid[line_B_Index][col_B_Index].includes(candidate)) return;
+
+          let countOnLineB = getCandidatesCountOnLine(candidatesGrid, line_B_Index)
+          if(countOnLineB[candidate] !== 2) return;
+
+          // console.log([
+          //   `candidate: ${candidate} is available 2 times on line ${line_A_Index} at col_A ${col_A_Index} and col_B ${col_B_Index}`,
+          //   `candidate: ${candidate} is also available on line_B ${line_B_Index} and col_A ${col_A_Index}`,
+          //   `candidate: ${candidate} is also available on line_B ${line_B_Index} and col_B ${col_B_Index}`
+          // ])
+
+          let lineInSameBloc = Math.floor(line_A_Index/3) === Math.floor(line_B_Index/3)
+          let colInSameBloc = Math.floor(col_A_Index/3) === Math.floor(col_B_Index/3)
+
+          if(lineInSameBloc || colInSameBloc) return;
+          
+          let newXwing = {
+            type: "xwing-line",
+            numb: candidate,
+            wings: [
+              { line: line_A_Index, col: col_A_Index },
+              { line: line_A_Index, col: col_B_Index },
+              { line: line_B_Index, col: col_A_Index },
+              { line: line_B_Index, col: col_B_Index },
+            ]
+          }
+          if(!xWingIsIncluded(XWings, newXwing)) {
+            XWings.push(newXwing)
+          }
+        })
+      })
+    })
+  })
+
+  return XWings
+}
+
+const getColumnXWings = candidatesGrid => {
+  let XWings = []
+  for (let col_A_Index = 0; col_A_Index < 9; col_A_Index++) {
+    let countOnColA = getCandidatesCountOnColumn(candidatesGrid, col_A_Index)
+    let column = getNearestPossibleValues(candidatesGrid, "column", { colIndex: col_A_Index })
+    column.forEach((candidates, line_A_Index) => {
+      candidates.forEach(candidate => {
+        if(countOnColA[candidate] !== 2) return;
+  
+        let indexes = getIndexesOfCandidate(column, candidate)
+        let line_B_Index = indexes.reduce((acc, ind) => {
+          return ind !== line_A_Index ? ind : acc
+        }, -1)
+  
+        let line = getNearestPossibleValues(candidatesGrid, "line", { lineIndex: line_A_Index })
+        line.forEach((candidatesOfLine, col_B_Index) => {
+          if(col_A_Index === col_B_Index) return;
+          if(!candidatesOfLine.includes(candidate)) return;
+          if(!candidatesGrid[line_B_Index][col_B_Index].includes(candidate)) return;
+  
+          let countOnColB = getCandidatesCountOnColumn(candidatesGrid, col_B_Index)
+          if(countOnColB[candidate] !== 2) return;
+  
+          // console.log([
+          //   `candidate: ${candidate} is available 2 times on col_A ${col_A_Index} at line_A ${line_A_Index} and line_B ${line_B_Index}`,
+          //   `candidate: ${candidate} is also available on col_B ${col_B_Index} and line_A ${line_A_Index}`,
+          //   `candidate: ${candidate} is also available on col_B ${col_B_Index} and line_B ${line_B_Index}`
+          // ])
+  
+          let lineInSameBloc = Math.floor(line_A_Index/3) === Math.floor(col_B_Index/3)
+          let colInSameBloc = Math.floor(col_A_Index/3) === Math.floor(col_B_Index/3)
+  
+          if(lineInSameBloc || colInSameBloc) return;
+          
+          let newXwing = {
+            type: "xwing-column",
+            numb: candidate,
+            wings: [
+              { line: line_A_Index, col: col_A_Index },
+              { line: line_A_Index, col: col_B_Index },
+              { line: line_B_Index, col: col_A_Index },
+              { line: line_B_Index, col: col_B_Index },
+            ]
+          }
+          if(!xWingIsIncluded(XWings, newXwing)) {
+            XWings.push(newXwing)
+          }
+        })
+      })
+    })
+  }
+
+  return XWings
+}
+
+const getXWings = candidatesGrid => {
+  return [...getLineXWings(candidatesGrid), ...getColumnXWings(candidatesGrid)]
+}
+
+const getCandidatesToRemoveByXWings = candidatesGrid => {
+  let XWings = getXWings(candidatesGrid)
+  let candidatesToRemove = []
+  XWings.forEach(xwing => {
+    let lineIndexes = [...new Set(xwing.wings.map(end => end.line))]
+    let colIndexes = [...new Set(xwing.wings.map(end => end.col))]
+    let xWingCanditate = xwing.numb
+    if(xwing.type === "xwing-column") {
+      lineIndexes.forEach(lineIndex => {
+        candidatesGrid[lineIndex].forEach((candidates, index) => {
+          if(!colIndexes.includes(index) && candidates.includes(xWingCanditate)) {
+            // console.log(`${xWingCanditate} est présent à la position (line: ${lineIndex}, col: ${index})`)
+            candidatesToRemove.push({ numb: xWingCanditate, position: { line: lineIndex, col: index }})
+          }
+        })
+      })
+    } else if(xwing.type === "xwing-line") {
+      colIndexes.forEach(colIndex => {
+        let nearestCandidates = getNearestPossibleValues(candidatesGrid, "column", { colIndex: colIndex })
+        nearestCandidates.forEach((candidates, lineIndex) => {
+          if(!lineIndexes.includes(lineIndex) && candidates.includes(xWingCanditate)) {
+            // console.log(`${xWingCanditate} est présent à la position (line: ${lineIndex}, col: ${colIndex})`)
+            candidatesToRemove.push({ numb: xWingCanditate, position: { line: lineIndex, col: colIndex }})
+          }
+        })
+      })
+    }
+  })
+  return candidatesToRemove
+}
+
 module.exports = {
   displayGrid,
   getHumanReadeableCellName,
@@ -487,4 +672,9 @@ module.exports = {
   getHTMLFullPageContent,
   getHtmlGridContent,
   getHTMLContent,
+  getIndexesOfCandidate,
+  xWingAreEqual,
+  xWingIsIncluded,
+  getXWings,
+  getCandidatesToRemoveByXWings
 }
