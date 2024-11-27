@@ -14,6 +14,7 @@ const {
   displayGrid,
   getXWings,
   getCandidatesToRemoveByXWings,
+  getCandidatesToRemoveByXYWings,
   getHTMLFullPageContent,
   getHtmlGridContent,
   getHTMLContent,
@@ -31,7 +32,9 @@ const getNextGridFullInfos = (grid) => {
   let nextGrid = JSON.parse(JSON.stringify(grid))
   let candidatesGrid = Array(9).fill().map(a => Array(9).fill().map(b => []))
 
+  //////////
   //CHECK POSSIBILITIES/CANDIDATES
+  //////////
   for (let i = 0; i < 9; i++) {
     for (let j = 0; j < 9; j++) {
       let isNotFoundYet = nextGrid[i][j] === 0
@@ -54,12 +57,22 @@ const getNextGridFullInfos = (grid) => {
     }
   })
   
+  //X-WING
   let candidatesToRemoveByXWing = getCandidatesToRemoveByXWings(candidatesGrid)
   candidatesToRemoveByXWing.forEach((numbAndPosition) => {
     candidatesGrid = getCandidatesGridOnCandidateRemoval(candidatesGrid, numbAndPosition)
   })
 
+  //XY-WING
+  let candidatesToRemoveByXYWing = getCandidatesToRemoveByXYWings(candidatesGrid)
+  candidatesToRemoveByXYWing.forEach((numbAndPosition) => {
+    candidatesGrid = getCandidatesGridOnCandidateRemoval(candidatesGrid, numbAndPosition)
+  })
+
+
+  //////////
   //RESOLUTION
+  //////////
   for (let i = 0; i < 9; i++) {
     for (let j = 0; j < 9; j++) {
       

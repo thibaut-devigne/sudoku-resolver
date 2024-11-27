@@ -17,7 +17,8 @@ const {
   xWingAreEqual,
   xWingIsIncluded,
   getXWings,
-  getCandidatesToRemoveByXWings
+  getCandidatesToRemoveByXWings,
+  getCandidatesToRemoveByXYWings,
 } = require("./sudokuUtils.js")
 
 const { 
@@ -580,6 +581,34 @@ describe("X-Wing behavior", () => {
     expect(result).toHaveLength(1)
     const expectedResult = [
       { numb: 9, position: { line: 1, col: 3 }}
+    ]
+    expect(result).toEqual(expectedResult)
+  })
+})
+
+describe("XY-Wing behavior", () => {
+  test("It should remove candidate thanks to XY-Wing method - Case with Line XY-Wing", () => {
+    //R5C5 [6,9] is the pivot
+    //R5C2 [6,7] and R8C5 [7,9] are the wings
+    // 7 can be removed from R8C2 [1,7]
+    const candidatesGrid = [
+      [[],  [], [],[], [],  [],[],[],[]],
+      [[],  [], [],[], [],  [],[],[],[]],
+      [[],  [], [],[], [],  [],[],[],[]],
+      [[],  [], [],[], [],  [],[],[],[]],
+      [[],[6,7],[],[],[6,9],[],[],[],[]],
+      [[],  [], [],[], [],  [],[],[],[]],
+      [[],  [], [],[], [],  [],[],[],[]],
+      [[],[1,7],[],[],[7,9],[],[],[],[]],
+      [[],  [], [],[], [],  [],[],[],[]],
+    ]
+
+    const result = getCandidatesToRemoveByXYWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(1)
+    const expectedResult = [
+      { numb: 7, position: { line: 7, col: 1 }}
     ]
     expect(result).toEqual(expectedResult)
   })

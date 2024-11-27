@@ -646,6 +646,109 @@ const getCandidatesToRemoveByXWings = candidatesGrid => {
   return candidatesToRemove
 }
 
+const getArrayIntersection = (arr1, arr2) => {
+  const uniqueArr1 = [...new Set(arr1)];
+  const uniqueArr2 = [...new Set(arr2)];
+  const result = [];
+
+  for (const num of uniqueArr2) {
+    if (uniqueArr1.includes(num)) result.push(num);
+  }
+
+  return result;
+}
+
+const XYWingsEndAreValid = (pivotCandidates, wingACandidates, wingBCandidates) => {
+  let allWingCandidates = [...wingACandidates, ...wingBCandidates]
+  let allPivotCancidatesAreInWings = allWingCandidates.includes(pivotCandidates[0]) && allWingCandidates.includes(pivotCandidates[1])
+  if(!allPivotCancidatesAreInWings) return false;
+
+  let wingOnLineWithoutPivot = wingACandidates.filter(candidate => !pivotCandidates.includes(candidate))
+  let wingOnColWithoutPivot = wingBCandidates.filter(candidate => !pivotCandidates.includes(candidate))
+
+  if(wingOnLineWithoutPivot.length !== 1) return false;
+  if(wingOnColWithoutPivot.length !== 1) return false;
+  if(wingOnLineWithoutPivot[0] !== wingOnColWithoutPivot[0]) return false;
+  return true
+}
+
+const getXYWings = candidatesGrid => {
+  
+}
+
+const getCandidatesToRemoveByXYWings = candidatesGrid => {
+  let toRemove = []
+
+  candidatesGrid.forEach((line, pivotLineIndex) => {
+    line.forEach((pivotCandidates, pivotColIndex) => {
+      if(pivotCandidates.length !== 2) return; 
+      
+      //look on line
+      let potentialWingOnLine = []
+
+      line.forEach((cellCandidates, colIndex) => {
+        if(cellCandidates.length !== 2) return;
+        let lineIntersection = getArrayIntersection(pivotCandidates, cellCandidates)
+        if(lineIntersection.length !== 1) return;
+        potentialWingOnLine.push({
+          line: pivotLineIndex,
+          col: colIndex,
+          cellCandidates
+        })
+      })
+
+      if(potentialWingOnLine.length === 0) return;
+
+      //look on column
+      let potentialWingOnCol = []
+
+      let column = getNearestPossibleValues(candidatesGrid, "column", { colIndex: pivotColIndex })
+      column.forEach((cellCandidates, lineIndex) => {
+        if(cellCandidates.length !== 2) return;
+        let colIntersection = getArrayIntersection(pivotCandidates, cellCandidates)
+        if(colIntersection.length !== 1) return;
+        potentialWingOnCol.push({
+          line: lineIndex,
+          col: pivotColIndex,
+          cellCandidates
+        })
+      })
+
+      if(potentialWingOnCol.length === 0) return;
+
+
+      // find good match
+      potentialWingOnLine.forEach(wingOnLine => {
+        potentialWingOnCol.forEach(wingOnCol => {
+          let wingOnLineCandidates = wingOnLine.cellCandidates
+          let wingOnColCandidates = wingOnCol.cellCandidates
+
+          if(!XYWingsEndAreValid(pivotCandidates, wingOnLineCandidates, wingOnColCandidates)) return;
+
+          let candidateToRemove = getArrayIntersection(wingOnLineCandidates, wingOnColCandidates)[0]
+
+          if(!candidatesGrid[wingOnCol.line][wingOnLine.col].includes(candidateToRemove)) return;
+            
+          toRemove.push({
+            numb: candidateToRemove,
+            position: { line: wingOnCol.line, col: wingOnLine.col}
+          })
+
+          // XYWings.push({
+          //   pivotPosition: { line: pivotLineIndex, col: pivotColIndex },
+          //   wingsPositions: [ 
+          //     { line: wingOnLine.line, col: wingOnLine.col },
+          //     { line: wingOnCol.line, col: wingOnCol.col },
+          //   ]
+          // })
+        })
+      })
+    })
+  })
+
+  return toRemove
+}
+
 module.exports = {
   displayGrid,
   getHumanReadeableCellName,
@@ -676,5 +779,7 @@ module.exports = {
   xWingAreEqual,
   xWingIsIncluded,
   getXWings,
-  getCandidatesToRemoveByXWings
+  getCandidatesToRemoveByXWings,
+  getXYWings,
+  getCandidatesToRemoveByXYWings
 }
