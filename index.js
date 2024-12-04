@@ -18,7 +18,7 @@ const {
 //   [0,0,2,0,0,0,0,0,0]
 // ]
 
-const initialGrid = exemple.find(aGrid => aGrid.reference === "expert_2616").statement
+const initialGrid = exemple.find(aGrid => aGrid.reference === "easy_6623").statement
 // const initialGrid = exemple[0].statement
 
 

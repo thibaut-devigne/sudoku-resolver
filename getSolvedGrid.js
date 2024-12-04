@@ -28,7 +28,7 @@ const mappingType_ParamsName = {
   "3x3": "blocIndex",
 }
 
-const getNextGridFullInfos = (grid) => {
+const getNextGridFullInfos = (grid, loopNumber) => {
   let nextGrid = JSON.parse(JSON.stringify(grid))
   let candidatesGrid = Array(9).fill().map(a => Array(9).fill().map(b => []))
 
@@ -44,6 +44,32 @@ const getNextGridFullInfos = (grid) => {
       }
     }
   }
+
+  let nbAddedByInclusion = false
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+    
+      let alreadyFound = nextGrid[i][j] !== 0
+      if(alreadyFound) continue;
+
+      //INCLUSION METHOD
+      let possiblesValues = candidatesGrid[i][j]
+      let hasSeveralCandidates = possiblesValues.length > 1
+      if(hasSeveralCandidates) continue;
+
+      nextGrid[i][j] = possiblesValues[0]
+      nbAddedByInclusion = true
+      let numberToSet = { 
+        numb: possiblesValues[0],
+        position: { line: i, col: j }
+      }
+      candidatesGrid = getCandidatesGridOnNumberSet(candidatesGrid, numberToSet)              
+      //need to add hidden singles here
+      //https://sudoku.com/sudoku-rules/hidden-singles/
+    } 
+  }
+
+  if(nbAddedByInclusion) return { nextGrid, candidatesGrid }
 
   nineCellsTypes.forEach(type => {
     for (let index = 0; index < 9; index++) {
@@ -63,11 +89,11 @@ const getNextGridFullInfos = (grid) => {
     candidatesGrid = getCandidatesGridOnCandidateRemoval(candidatesGrid, numbAndPosition)
   })
 
-  //XY-WING
-  let candidatesToRemoveByXYWing = getCandidatesToRemoveByXYWings(candidatesGrid)
-  candidatesToRemoveByXYWing.forEach((numbAndPosition) => {
-    candidatesGrid = getCandidatesGridOnCandidateRemoval(candidatesGrid, numbAndPosition)
-  })
+  // //XY-WING
+  // let candidatesToRemoveByXYWing = getCandidatesToRemoveByXYWings(candidatesGrid)
+  // candidatesToRemoveByXYWing.forEach((numbAndPosition) => {
+  //   candidatesGrid = getCandidatesGridOnCandidateRemoval(candidatesGrid, numbAndPosition)
+  // })
 
 
   //////////
@@ -128,8 +154,8 @@ const getNextGridFullInfos = (grid) => {
   return { nextGrid, candidatesGrid }
 }
 
-const getNextGrid = (grid) => {
-  let { nextGrid } = getNextGridFullInfos(grid)
+const getNextGrid = (grid, loopNumber) => {
+  let { nextGrid } = getNextGridFullInfos(grid, loopNumber)
   return nextGrid
 }
 
@@ -140,7 +166,7 @@ const getSolvedGrid = (grid) => {
   while (n < 100) {
     // console.log("Loop n°", n, " =========")
     n++;
-    currentGrid = getNextGrid(currentGrid)
+    currentGrid = getNextGrid(currentGrid, n)
 
     if(sudokuIsSolved(currentGrid)) {
       break;
@@ -156,11 +182,12 @@ const generateHTMLResolutionSteps = (initialGrid) => {
   let htmlResolutionStepsBody = ""
 
   while (n < 100) {
-    // console.log("Loop n°", n, " =========")
+    console.log("Loop n°", n, " =========")
     n++;
-    let { nextGrid, candidatesGrid } = getNextGridFullInfos(currentGrid)
+    let { nextGrid, candidatesGrid } = getNextGridFullInfos(currentGrid, n)
     currentGrid = nextGrid
     htmlResolutionStepsBody = htmlResolutionStepsBody.concat(getHtmlGridContent(nextGrid, candidatesGrid))
+    htmlResolutionStepsBody = htmlResolutionStepsBody.concat(`<p>Step ${n}</p>`)
 
     if(sudokuIsSolved(currentGrid)) {
       break;

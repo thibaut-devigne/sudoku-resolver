@@ -18,6 +18,7 @@ const {
   xWingIsIncluded,
   getXWings,
   getCandidatesToRemoveByXWings,
+  getIntersectionCells,
   getCandidatesToRemoveByXYWings,
 } = require("./sudokuUtils.js")
 
@@ -406,6 +407,40 @@ describe("", () => {
     expect(getIndexesOfCandidate(nearestCandidates, 3)).toEqual([0,2,4])
   })
 
+  test("It should get cell that intersect 2 units", () => {
+    let result = getIntersectionCells(0,2,undefined)
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toEqual([{ line: 0, col: 2 }])
+
+    let result2 = getIntersectionCells(1,undefined, 2)
+    expect(Array.isArray(result2)).toBe(true)
+    let expectedResult2 = [
+      { line: 1, col: 6 },
+      { line: 1, col: 7 },
+      { line: 1, col: 8 },
+    ]
+    expect(result2).toEqual(expectedResult2)
+
+    //no intersection between line 1 and bloc 5
+    let result3 = getIntersectionCells(1,undefined, 5)
+    expect(Array.isArray(result3)).toBe(true)
+    expect(result3).toEqual([])
+
+    //Intersection between col 4 and bloc 7
+    let result4 = getIntersectionCells(undefined, 4, 7)
+    expect(Array.isArray(result4)).toBe(true)
+    let expectedResult4 = [
+      { line: 6, col: 4 },
+      { line: 7, col: 4 },
+      { line: 8, col: 4 },
+    ]
+    expect(result4).toEqual(expectedResult4)
+
+    //no intersection between col 7 and bloc 3
+    let result5 = getIntersectionCells(undefined, 7, 3)
+    expect(Array.isArray(result5)).toBe(true)
+    expect(result5).toEqual([])
+  })
   
 })
 
@@ -525,7 +560,7 @@ describe("X-Wing behavior", () => {
 
     expect(Array.isArray(result)).toBe(true)
     expect(result).toHaveLength(1)
-    console.log(result[0])
+
     const expectedResult = {
       type: "xwing-column",
       numb: 9,
@@ -587,7 +622,7 @@ describe("X-Wing behavior", () => {
 })
 
 describe("XY-Wing behavior", () => {
-  test("It should remove candidate thanks to XY-Wing method - Case with Line XY-Wing", () => {
+  test("It should remove candidate thanks to XY-Wing method - Case with Line-Column XY-Wing", () => {
     //R5C5 [6,9] is the pivot
     //R5C2 [6,7] and R8C5 [7,9] are the wings
     // 7 can be removed from R8C2 [1,7]
@@ -612,23 +647,82 @@ describe("XY-Wing behavior", () => {
     ]
     expect(result).toEqual(expectedResult)
   })
+
+  test("It should remove candidate thanks to XY-Wing method - Case with column-bloc XY-Wing", () => {
+    //R7C1 [7,9] is the pivot
+    //R2C1 [3,7] and R9C3 [3,9] are the wings
+    // 3 can be removed from R2C3 [3,4,6] and R3C3 [3,4,6]
+    const candidatesGrid = [
+      [  [], [],  [],   [],[],[],[],[],[]],
+      [[3,7],[],[3,4,6],[],[],[],[],[],[]],
+      [  [], [],[3,4,6],[],[],[],[],[],[]],
+      [  [], [],  [],   [],[],[],[],[],[]],
+      [  [], [],  [],   [],[],[],[],[],[]],
+      [  [], [],  [],   [],[],[],[],[],[]],
+      [[7,9],[],  [],   [],[],[],[],[],[]],
+      [  [], [],  [],   [],[],[],[],[],[]],
+      [  [], [],[3,9],[],[],[],[],[],[]],
+    ]
+
+    const result = getCandidatesToRemoveByXYWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(2)
+    const expectedResult = [
+      { numb: 3, position: { line: 1, col: 2 }},
+      { numb: 3, position: { line: 2, col: 2 }},
+    ]
+    expect(result).toEqual(expectedResult)
+  })
+
+  test("It should remove candidate thanks to XY-Wing method - Case with line-bloc XY-Wing", () => {
+    const candidatesGrid = [
+      [  [], [], [7,9], [],[],[],   [],   [3,7], []],
+      [  [], [],  [],   [],[],[],   [],     [],  []],
+      [[3,9],[],  [],   [],[],[],[3,4,6],[3,4,6],[]],
+      [  [], [],  [],   [],[],[],   [],     [],  []],
+      [  [], [],  [],   [],[],[],   [],     [],  []],
+      [  [], [],  [],   [],[],[],   [],     [],  []],
+      [  [], [],  [],   [],[],[],   [],     [],  []],
+      [  [], [],  [],   [],[],[],   [],     [],  []],
+      [  [], [],  [],   [],[],[],   [],     [],  []],
+    ]
+
+    const result = getCandidatesToRemoveByXYWings(candidatesGrid)
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result).toHaveLength(2)
+    const expectedResult = [
+      { numb: 3, position: { line: 2, col: 6 }},
+      { numb: 3, position: { line: 2, col: 7 }},
+    ]
+    expect(result).toEqual(expectedResult)
+  })
 })
 
 describe("Full grid resolution", () => {
   test("case with easy grid", () => {
-    const easyGrid = exemple[0]
-    const { statement, solved } = easyGrid
-    const calculatedSolvedGrid = getSolvedGrid(statement)
+    const easyGrids = exemple.filter(grid => grid.level === "easy")
 
-    expect(gridsAreEquals(calculatedSolvedGrid, solved)).toBe(true)
+    const allEasyGridsAreSolved = easyGrids.every(grid => {
+      const { statement, solved } = grid
+      const calculatedSolvedGrid = getSolvedGrid(statement)
+      return gridsAreEquals(calculatedSolvedGrid, solved)
+    })
+
+    expect(allEasyGridsAreSolved).toBe(true)
   })
 
   test("case with medium grid", () => {
-    const mediumGrid = exemple[1]
-    const { statement, solved } = mediumGrid
-    const calculatedSolvedGrid = getSolvedGrid(statement)
+    const mediumGrids = exemple.filter(grid => grid.level === "medium")
 
-    expect(gridsAreEquals(calculatedSolvedGrid, solved)).toBe(true)
+    const allMediumGridsAreSolved = mediumGrids.every(grid => {
+      const { statement, solved } = grid
+      const calculatedSolvedGrid = getSolvedGrid(statement)
+      return gridsAreEquals(calculatedSolvedGrid, solved)
+    })
+
+    expect(allMediumGridsAreSolved).toBe(true)
   })
 
   // test("case with hard grid", () => {
